@@ -37,11 +37,12 @@ func main() {
 	defer db.Close()
 
 	r := mux.NewRouter()
-	r.HandleFunc("/products", getProducts).Methods("GET")
-	r.HandleFunc("/product", createProduct).Methods("POST")
+	userRouter := r.PathPrefix("/product").Subrouter()
+	userRouter.HandleFunc("/products", getProducts).Methods("GET")
+	userRouter.HandleFunc("/product", createProduct).Methods("POST")
 
-	log.Println("Product Service is running on port 8082")
-	log.Fatal(http.ListenAndServe(":8082", r))
+	log.Println("Product Service is running on port 8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func getDBURL() string {

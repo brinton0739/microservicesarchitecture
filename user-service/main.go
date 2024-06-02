@@ -62,15 +62,18 @@ func main() {
 	}
 	defer db.Close(context.Background())
 
-	r := mux.NewRouter()
-	r.HandleFunc("/register", registerUser).Methods("POST")
-	r.HandleFunc("/login", loginUser).Methods("POST")
-	r.HandleFunc("/profile", getUserProfile).Methods("GET")
-	r.HandleFunc("/users", getUserProfileList).Methods("GET")
-	r.HandleFunc("/users/{id}", deleteUserHandler).Methods("DELETE")
+	router := mux.NewRouter()
+	// Prefix all routes with /user
+	userRouter := router.PathPrefix("/user").Subrouter()
+	userRouter.HandleFunc("/register", registerUser).Methods("POST")
+	userRouter.HandleFunc("/login", loginUser).Methods("POST")
+	userRouter.HandleFunc("/profile", getUserProfile).Methods("GET")
+	userRouter.HandleFunc("/users", getUserProfileList).Methods("GET")
+	userRouter.HandleFunc("/users/{id}", deleteUserHandler).Methods("DELETE")
+	http.ListenAndServe(":8080", router) // Ensure this is set to 8080
 
-	log.Println("User Service is running on port 8081")
-	log.Fatal(http.ListenAndServe(":8081", r))
+	log.Println("User Service is running on port 8080")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func getDBURL() string {

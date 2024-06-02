@@ -1,17 +1,65 @@
 version: '3.8'
+
 services:
-  postgres:
+  traefik:
+    image: traefik:v2.5
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080" # Traefik Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  postgres-user:
     image: postgres:13
+    container_name: postgres-user
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      # POSTGRES_DB: cruddb  # This will create the 'userdb' database
+      POSTGRES_DB: userdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata-user:/var/lib/postgresql/data
       - ./user-service/userschema.sql:/docker-entrypoint-initdb.d/userdb.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-product:
+    image: postgres:13
+    container_name: postgres-product
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: productdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata-product:/var/lib/postgresql/data
       - ./product-service/productschema.sql:/docker-entrypoint-initdb.d/productdb.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-order:
+    image: postgres:13
+    container_name: postgres-order
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orderdb
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata-order:/var/lib/postgresql/data
       - ./order-service/orderschema.sql:/docker-entrypoint-initdb.d/orderdb.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -22,24 +70,28 @@ services:
   user-service:
     build: ./user-service
     depends_on:
-      - postgres
+      - postgres-user
+    labels:
+      - "traefik.http.routers.user-service.rule=Host(`localhost`) && PathPrefix(`/user`)"
     ports:
-      - "8081:8081"
+      - "8081:8080"
     environment:
-      - POSTGRES_HOST=postgres
+      - POSTGRES_HOST=postgres-user
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=userdb # This needs to be the database for the server
+      - POSTGRES_DB=userdb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 
   product-service:
     build: ./product-service
     depends_on:
-      - postgres
+      - postgres-product
+    labels:
+      - "traefik.http.routers.product-service.rule=Host(`localhost`) && PathPrefix(`/product`)"
     ports:
-      - "8082:8082"
+      - "8082:8080"
     environment:
-      - POSTGRES_HOST=postgres
+      - POSTGRES_HOST=postgres-product
       - POSTGRES_PORT=5432
       - POSTGRES_DB=productdb
       - POSTGRES_USER=postgres
@@ -48,17 +100,22 @@ services:
   order-service:
     build: ./order-service
     depends_on:
-      - postgres
+      - postgres-order
+    labels:
+      - "traefik.http.routers.order-service.rule=Host(`localhost`) && PathPrefix(`/order`)"
     ports:
-      - "8083:8083"
+      - "8083:8080"
     environment:
-      - POSTGRES_HOST=postgres
+      - POSTGRES_HOST=postgres-order
       - POSTGRES_PORT=5432
       - POSTGRES_DB=orderdb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 
 volumes:
-  pgdata:
+  pgdata-user:
+  pgdata-product:
+  pgdata-order:
+
 
 

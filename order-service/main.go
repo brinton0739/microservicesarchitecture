@@ -48,12 +48,13 @@ func main() {
 	defer db.Close(context.Background())
 
 	r := mux.NewRouter()
-	r.HandleFunc("/order", createOrder).Methods("POST")
-	r.HandleFunc("/orders", getOrders).Methods("GET")
-	r.HandleFunc("/order/{id}", getOrderByID).Methods("GET")
+	subrouter := r.PathPrefix("/order").Subrouter()
+	subrouter.HandleFunc("/order", createOrder).Methods("POST")
+	subrouter.HandleFunc("/orders", getOrders).Methods("GET")
+	subrouter.HandleFunc("/order/{id}", getOrderByID).Methods("GET")
 
-	log.Println("Order Service is running on port 8083")
-	log.Fatal(http.ListenAndServe(":8083", r))
+	log.Println("Order Service is running on port 8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func getDBURL() string {

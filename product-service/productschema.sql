@@ -1,7 +1,3 @@
-CREATE DATABASE productdb;
-\c productdb;
-
--- Products Table
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
