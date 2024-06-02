@@ -1,6 +1,8 @@
 # Microservices Architecture
 
-This project demonstrates a simple microservices architecture using Golang and Docker. It includes User, Product, and Order services, with an API Gateway using Kong.
+This project demonstrates a simple microservices architecture using Golang and Docker. It includes User, Product, and Order services, with an API Gateway using Traefik.
+
+each service app has its own postgres server and database and is reachable through the single localhost/(service name) ie / user,product,order/ as its routing prefix and then directed by the router
 
 ## Prerequisites
 
