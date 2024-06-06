@@ -15,11 +15,13 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+// global variables for the database connection and mutex for synchronization
 var (
 	db *pgx.Conn
 	mu sync.Mutex
 )
 
+// order struct represents an order in the system
 type Order struct {
 	ID        int       `json:"id"`
 	UserID    int       `json:"user_id"`
@@ -31,6 +33,7 @@ type Order struct {
 }
 
 func main() {
+	// attempt to connect to the database with retries
 	var err error
 	maxRetries := 10
 	dbURL := getDBURL()
@@ -47,6 +50,7 @@ func main() {
 	}
 	defer db.Close(context.Background())
 
+	// initialize the router and define routes
 	r := mux.NewRouter()
 	subrouter := r.PathPrefix("/order").Subrouter()
 	subrouter.HandleFunc("/order", createOrder).Methods("POST")
@@ -57,6 +61,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
+// getDBURL constructs the database URL from environment variables
 func getDBURL() string {
 	host := os.Getenv("POSTGRES_HOST")
 	port := os.Getenv("POSTGRES_PORT")
@@ -66,6 +71,7 @@ func getDBURL() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, password, host, port, dbname)
 }
 
+// createOrder handles POST requests to create a new order
 func createOrder(w http.ResponseWriter, r *http.Request) {
 	var order Order
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
@@ -88,6 +94,7 @@ func createOrder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Order created!"))
 }
 
+// getOrders handles GET request to retrieve all orders
 func getOrders(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(context.Background(), "SELECT id, user_id, product_id, quantity, status, total, order_date FROM orders")
 	if err != nil {
